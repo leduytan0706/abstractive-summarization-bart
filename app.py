@@ -13,7 +13,7 @@ st.set_page_config(page_title="Text Summarizer", layout="wide")
 # Tải mô hình đã được fine tuned
 @st.cache_resource
 def load_model():
-    tokenizer = AutoTokenizer.from_pretrained("./fine_tune_dir")
+    tokenizer = AutoTokenizer.from_pretrained("leduytan0706/bart-large-cnn-xsum")
     model = BartForConditionalGeneration.from_pretrained("leduytan0706/bart-large-cnn-xsum")
     return tokenizer, model
 
@@ -90,14 +90,13 @@ def plot_hidden_states(hidden_states, tokens):
         ax.grid(True)
         return fig
 
-    col1, col2 = st.columns(2)
-    with col1:
-        fig1 = plot_state(pca_reduce(first_state), "Layer Encoder thứ nhất (positional + token embedding)")
-        st.pyplot(fig1)
-    with col2:
-        fig2 = plot_state(pca_reduce(last_state), "Layer Encoder cuối cùng")
-        st.pyplot(fig2)
     
+    fig1 = plot_state(pca_reduce(first_state), "Trước layer Encoder thứ nhất (positional + token embedding)")
+    st.pyplot(fig1)
+
+    fig2 = plot_state(pca_reduce(last_state), "Layer Encoder cuối cùng")
+    st.pyplot(fig2)
+
 
 button_state = False
 max_length = 130
@@ -144,8 +143,11 @@ if show_process and button_state:
     if encoder_hidden_states is not None:
         st.text("Đồ thị scatter plot biểu diễn các token trước khi vào encoder (sau khi đã qua token embedding và positional encoding) và sau khi ra khỏi layer cuối cùng của encoder")
         st.text("Mỗi token trong văn bản tương ứng với một điểm trên scatter plot. Vị trí của điểm được xác định bởi biểu diễn ngữ nghĩa (semantic vector) của token đó, sau khi giảm từ 1024 chiều còn 2 chiều.")
+        st.text("Trước khi vào Encoder, các token được biểu diễn dựa trên mối quan hệ tương đồng về ngữ nghĩa tự nhiên, chưa bao gồm ngữ cảnh trong văn bản.")
+        st.text("Sau khi ra khỏi các layer của Encoder, các token được biểu diễn dựa trên mối quan hệ tương đồng về ngữ nghĩa dựa trên nhiều loại ngữ cảnh trong văn bản.")
         plot_hidden_states(encoder_hidden_states, tokens)
         st.text("Các điểm càng gần nhau thì có mối quan hệ ngữ nghĩa càng mật thiết với nhau.")
+        
     else:
         st.text("Có sự cố xảy ra khi biểu diễn dữ liệu bước này.")
     st.html("<hr />")
