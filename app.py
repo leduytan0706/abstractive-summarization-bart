@@ -3,18 +3,18 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["STREAMLIT_USE_WATCHMAN"] = "false"
 
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import torch
+from transformers import AutoTokenizer, BartForConditionalGeneration
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 st.set_page_config(page_title="Text Summarizer", layout="wide")
 
+# Tải mô hình đã được fine tuned
 @st.cache_resource
 def load_model():
     tokenizer = AutoTokenizer.from_pretrained("./fine_tune_dir")
-    model = AutoModelForSeq2SeqLM.from_pretrained("./fine_tune_dir")
+    model = BartForConditionalGeneration.from_pretrained("leduytan0706/bart-large-cnn-xsum")
     return tokenizer, model
 
 st.title("Tóm tắt văn bản theo hướng tóm lược (Abstractive Summarization) với BART")
@@ -125,8 +125,6 @@ with col2:
         else:
             if show_process:
                 input_ids, encoder_hidden_states, summary_ids, summary = summarize_text(text, min_length, max_length, show_process)
-            # print(type(cross_attentions))  # List
-            # print(type(cross_attentions[0]))  # Nếu là tuple → chính xác nguồn lỗi
             else:
                 summary = summarize_text(text, min_length, max_length, show_process)
             st.text_area("Kết quả tóm tắt", value=summary, height=300, max_chars=len(summary))
