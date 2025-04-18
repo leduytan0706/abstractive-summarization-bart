@@ -18,6 +18,7 @@ def load_model():
     return tokenizer, model
 
 st.title("Tóm tắt văn bản theo hướng tóm lược (Abstractive Summarization) với BART")
+st.html("<h3>Được pretrained trên tập dữ liệu abisee/cnn_dailymail và được fine tuned trên tập dữ liệu EdinburghNLP/xsum</h3>")
 tokenizer, model = load_model()
 def modify_length(min_length, max_length):
     return int(min_length*1.5), int(max_length*1.5)
