@@ -3,7 +3,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["STREAMLIT_USE_WATCHMAN"] = "false"
 
 import streamlit as st
-from transformers import AutoTokenizer, BartForConditionalGeneration
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
@@ -13,8 +13,8 @@ st.set_page_config(page_title="Text Summarizer", layout="wide")
 
 @st.cache_resource
 def load_model():
-    tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large-cnn")
-    model = BartForConditionalGeneration.from_pretrained("facebook/bart-large-cnn", attn_implementation="eager")
+    tokenizer = AutoTokenizer.from_pretrained("./fine_tune_dir")
+    model = AutoModelForSeq2SeqLM.from_pretrained("./fine_tune_dir")
     return tokenizer, model
 
 st.title("Tóm tắt văn bản theo hướng tóm lược (Abstractive Summarization) với BART")
@@ -34,14 +34,18 @@ def summarize_text(text, min_length, max_length, show_process = False):
     if show_process:
         outputs = model.generate(
             input_ids,
-            num_beams=2,
+            attention_mask=inputs['attention_mask'],
+            decoder_start_token_id=tokenizer.bos_token_id,
+            num_beams=4,
             max_length=max_length,
             min_length=min_length,
             early_stopping=True,
             do_sample=False,
-            output_attentions=True,
             output_hidden_states=True,
-            return_dict_in_generate=True
+            return_dict_in_generate=True,
+            pad_token_id=tokenizer.pad_token_id,
+            no_repeat_ngram_size=3,
+            repetition_penalty=2.0
         )
         encoder_hidden_states = outputs.encoder_hidden_states
         summary_ids = outputs.sequences
@@ -50,11 +54,16 @@ def summarize_text(text, min_length, max_length, show_process = False):
     else:
         summary_ids = model.generate(
             input_ids,
-            num_beams=2,
+            attention_mask=inputs['attention_mask'],
+            decoder_start_token_id=tokenizer.bos_token_id,
+            num_beams=4,
             max_length=max_length,
             min_length=min_length,
             early_stopping=True,
             do_sample=False,
+            pad_token_id=tokenizer.pad_token_id,
+            no_repeat_ngram_size=3,
+            repetition_penalty=2.0,
         )
         summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
         return summary
@@ -143,11 +152,11 @@ if show_process and button_state:
     st.html("<hr />")
     st.html("<h4>3. Sinh ra các từ tóm tắt - Summary tokens generation")
     if summary_ids is not None:
-        st.text(f"Có tổng cộng {len(summary_ids)} được sinh ra")
+        st.text(f"Có tổng cộng {len(summary_ids[0])} được sinh ra")
         summary_tokens = tokenizer.convert_ids_to_tokens(summary_ids[0], skip_special_tokens=True)
         st.text(summary_tokens)
         formatted_summary_tokens = [token.replace("Ġ","") for token in summary_tokens]
-        st.text(formatted_summary_tokens[1:-1])
+        st.text(formatted_summary_tokens)
     else:
         st.text("Có sự cố xảy ra khi biểu diễn dữ liệu bước này.") 
     st.html("<hr />")
